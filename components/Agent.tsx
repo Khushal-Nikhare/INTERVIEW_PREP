@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { vapi } from "@/lib/vapi.sdk";
 import { interviewer } from "@/constants";
 import { createFeedback } from "@/lib/actions/interview.action";
+import { toast } from "sonner";
 
 enum CallStatus {
   INACTIVE = "INACTIVE",
@@ -109,33 +110,55 @@ const Agent = ({
 
   const handleCall = async () => {
     setCallStatus(CallStatus.CONNECTING);
+    if (typeof window === "undefined") {
+      setCallStatus(CallStatus.INACTIVE);
+      return;
+    }
 
-    if (type === "generate") {
-      await vapi.start(
-        undefined,
-        undefined,
-        undefined,
-        process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID!,
-        {
-          variableValues: {
-            username: userName,
-            userid: userId,
-          },
+    if (!window.isSecureContext) {
+      setCallStatus(CallStatus.INACTIVE);
+      toast.error("Microphone access requires HTTPS or localhost.");
+      return;
+    }
+
+    if (!navigator.mediaDevices?.enumerateDevices) {
+      setCallStatus(CallStatus.INACTIVE);
+      toast.error("Microphone devices are unavailable in this browser.");
+      return;
+    }
+
+    try {
+      if (type === "generate") {
+        await vapi.start(
+          undefined,
+          undefined,
+          undefined,
+          process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID!,
+          {
+            variableValues: {
+              username: userName,
+              userid: userId,
+            },
+          }
+        );
+      } else {
+        let formattedQuestions = "";
+        if (questions) {
+          formattedQuestions = questions
+            .map((question) => `- ${question}`)
+            .join("\n");
         }
-      );
-    } else {
-      let formattedQuestions = "";
-      if (questions) {
-        formattedQuestions = questions
-          .map((question) => `- ${question}`)
-          .join("\n");
-      }
 
-      await vapi.start(interviewer, {
-        variableValues: {
-          questions: formattedQuestions,
-        },
-      });
+        await vapi.start(interviewer, {
+          variableValues: {
+            questions: formattedQuestions,
+          },
+        });
+      }
+    } catch (error) {
+      setCallStatus(CallStatus.INACTIVE);
+      console.log("Error starting call:", error);
+      toast.error("Failed to start the call. Check mic permissions.");
     }
   };
 
