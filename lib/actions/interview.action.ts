@@ -49,6 +49,38 @@ export async function createFeedback(params: CreateFeedbackParams) {
   const { interviewId, userId, transcript, feedbackId } = params;
 
   try {
+    console.log("Analyzing interview with Python backend:", interviewId);
+
+    let pythonAnalysis = null;
+    let usingPythonBackend = false;
+
+    try {
+      const pythonApiUrl = process.env.PYTHON_API_URL || "http://127.0.0.1:8000";
+      
+      const pythonResponse = await fetch(`${pythonApiUrl}/analyze`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          transcript: transcript.map((msg: { role: string; content: string }) => ({
+            role: msg.role,
+            content: msg.content,
+          })),
+        }),
+      });
+
+      if (pythonResponse.ok) {
+        pythonAnalysis = await pythonResponse.json();
+        usingPythonBackend = true;
+        console.log("✅ Python backend analysis successful");
+      } else {
+        console.warn("⚠️ Python backend unavailable, falling back to LLM-only mode");
+      }
+    } catch (pythonError) {
+      console.warn("⚠️ Python backend error, falling back to LLM-only mode:", pythonError);
+    }
+
     const formattedTranscript = transcript
       .map(
         (sentence: { role: string; content: string }) =>
@@ -56,7 +88,48 @@ export async function createFeedback(params: CreateFeedbackParams) {
       )
       .join("");
 
-    console.log("Generating AI feedback for interview:", interviewId);
+    const prompt = usingPythonBackend
+      ? `
+        You are an AI interviewer analyzing a mock interview. You have received advanced analysis data from a Python backend system.
+        
+        Transcript:
+        ${formattedTranscript}
+        
+        Python Analysis Results:
+        - Overall Score: ${pythonAnalysis.overall_score}/100
+        - Communication Score: ${pythonAnalysis.communication_score}/100
+        - Technical Score: ${pythonAnalysis.technical_score}/100
+        - Filler Word Ratio: ${(pythonAnalysis.metrics.filler_ratio * 100).toFixed(2)}%
+        - Average Response Length: ${pythonAnalysis.metrics.avg_response_length} words
+        - Technical Density: ${(pythonAnalysis.metrics.technical_density * 100).toFixed(2)}%
+        - Response Depth: ${pythonAnalysis.metrics.response_depth}
+        
+        Detected Strengths: ${pythonAnalysis.strengths.join(", ")}
+        Detected Weaknesses: ${pythonAnalysis.weaknesses.join(", ")}
+        
+        Using this data-driven analysis, provide detailed scores and feedback in the following areas:
+        - **Communication Skills**: Use the Python communication score (${pythonAnalysis.communication_score}) as a baseline. Consider filler words, clarity, and response structure.
+        - **Technical Knowledge**: Use the Python technical score (${pythonAnalysis.technical_score}) as a baseline. Consider technical terminology usage and depth.
+        - **Problem-Solving**: Analyze their approach to problems based on the transcript.
+        - **Cultural Fit**: Assess alignment with professional standards.
+        - **Confidence and Clarity**: Consider response depth and articulation.
+
+        Be thorough and critical. Point out specific issues found by the Python analysis.
+        `
+      : `
+        You are an AI interviewer analyzing a mock interview. Your task is to evaluate the candidate based on structured categories. Be thorough and detailed in your analysis. Don't be lenient with the candidate. If there are mistakes or areas for improvement, point them out.
+        Transcript:
+        ${formattedTranscript}
+
+        Please score the candidate from 0 to 100 in the following areas:
+        - **Communication Skills**: Clarity, articulation, structured responses.
+        - **Technical Knowledge**: Understanding of key concepts for the role.
+        - **Problem-Solving**: Ability to analyze problems and propose solutions.
+        - **Cultural Fit**: Alignment with company values and job role.
+        - **Confidence and Clarity**: Confidence in responses, engagement, and clarity.
+
+        For strengths and areas for improvement, provide detailed explanations in paragraph form.
+        `;
 
     const {
       object: {
@@ -73,22 +146,10 @@ export async function createFeedback(params: CreateFeedbackParams) {
     } = await generateObject({
       model: google("gemini-2.5-flash-lite"),
       schema: feedbackSchema,
-      prompt: `
-        You are an AI interviewer analyzing a mock interview. Your task is to evaluate the candidate based on structured categories. Be thorough and detailed in your analysis. Don't be lenient with the candidate. If there are mistakes or areas for improvement, point them out.
-        Transcript:
-        ${formattedTranscript}
-
-        Please score the candidate from 0 to 100 in the following areas:
-        - **Communication Skills**: Clarity, articulation, structured responses.
-        - **Technical Knowledge**: Understanding of key concepts for the role.
-        - **Problem-Solving**: Ability to analyze problems and propose solutions.
-        - **Cultural Fit**: Alignment with company values and job role.
-        - **Confidence and Clarity**: Confidence in responses, engagement, and clarity.
-
-        For strengths and areas for improvement, provide detailed explanations in paragraph form.
-        `,
-      system:
-        "You are a professional interviewer analyzing a mock interview. Your task is to evaluate the candidate based on structured categories",
+      prompt,
+      system: usingPythonBackend
+        ? "You are a professional interviewer with access to advanced analytics. Use both data-driven insights and qualitative assessment to provide comprehensive feedback."
+        : "You are a professional interviewer analyzing a mock interview. Your task is to evaluate the candidate based on structured categories",
     });
 
     // Convert the new schema format to the database format
