@@ -41,6 +41,12 @@ async def health():
     return {"status": "healthy"}
 
 
+@app.head("/health")
+async def health_head():
+    """Health check endpoint for HEAD requests"""
+    return {}
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(
