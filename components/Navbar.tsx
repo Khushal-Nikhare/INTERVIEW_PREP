@@ -32,21 +32,36 @@ const Navbar = ({ user }: { user: { name: string; email: string } }) => {
         <h2 className="text-primary-100">Interview Prep</h2>
       </Link>
 
-      {/* User Profile Section */}
-      <div className="relative">
-        <button
-          onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-          disabled={isLoggingOut}
-          className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      {/* Navigation Links */}
+      <div className="flex items-center gap-4">
+        <Link
+          href="/aptitude"
+          className="text-sm hover:text-primary-100 transition-colors max-sm:hidden"
         >
-          <div className="flex items-center gap-2 hover:text-black">
-            <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
-              <span className="text-black text-sm font-medium">
-                {user.name.charAt(0).toUpperCase()}
-              </span>
+          Aptitude Test
+        </Link>
+        <Link
+          href="/interview/create"
+          className="text-sm hover:text-primary-100 transition-colors max-sm:hidden"
+        >
+          Create Interview
+        </Link>
+
+        {/* User Profile Section */}
+        <div className="relative">
+          <button
+            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            disabled={isLoggingOut}
+            className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <div className="flex items-center gap-2 hover:text-black">
+              <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
+                <span className="text-black text-sm font-medium">
+                  {user.name.charAt(0).toUpperCase()}
+                </span>
+              </div>
             </div>
-          </div>
-        </button>
+          </button>
 
         {/* Dropdown Menu */}
         {isDropdownOpen && (
@@ -56,6 +71,47 @@ const Navbar = ({ user }: { user: { name: string; email: string } }) => {
                 <p className="text-sm font-medium text-gray-900">{user.name}</p>
                 <p className="text-xs text-gray-600 truncate">{user.email}</p>
               </div>
+
+              <Link
+                href="/aptitude"
+                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors sm:hidden"
+                onClick={() => setIsDropdownOpen(false)}
+              >
+                <svg
+                  className="w-4 h-4 mr-3"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
+                </svg>
+                Aptitude Test
+              </Link>
+              <Link
+                href="/interview/create"
+                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors sm:hidden"
+                onClick={() => setIsDropdownOpen(false)}
+              >
+                <svg
+                  className="w-4 h-4 mr-3"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4v16m8-8H4"
+                  />
+                </svg>
+                Create Interview
+              </Link>
 
               <button
                 onClick={handleSignOut}
@@ -107,6 +163,7 @@ const Navbar = ({ user }: { user: { name: string; email: string } }) => {
             </div>
           </div>
         )}
+      </div>
       </div>
 
       {/* Overlay to close dropdown when clicking outside */}

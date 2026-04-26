@@ -23,6 +23,7 @@ interface Interview {
   userId: string;
   type: string;
   finalized: boolean;
+  coverImage?: string;
 }
 
 interface CreateFeedbackParams {
@@ -96,4 +97,54 @@ interface InterviewFormProps {
 
 interface TechIconProps {
   techStack: string[];
+}
+
+interface CreateCustomInterviewParams {
+  role: string;
+  type: string;
+  level: string;
+  techstack: string;
+  questions: string[];
+  userId: string;
+}
+
+// ── Aptitude Test Types ────────────────────────────────────────────
+
+interface MCQQuestion {
+  id: string;
+  question: string;
+  options: string[];        // ["A. ...", "B. ...", "C. ...", "D. ..."]
+  correctAnswer: string;    // "A" | "B" | "C" | "D"
+  explanation: string;
+  difficulty: "easy" | "medium" | "hard";
+}
+
+interface AptitudeAnswerEntry {
+  questionId: string;
+  selected: string;
+  correct: string;
+  isCorrect: boolean;
+  questionText?: string;
+  options?: string[];
+  explanation?: string;
+}
+
+interface AptitudeResult {
+  id?: string;
+  userId: string;
+  category: string;
+  score: number;
+  totalQuestions: number;
+  percentage: number;
+  answers: AptitudeAnswerEntry[];
+  createdAt: string;
+}
+
+interface SaveAptitudeResultParams {
+  userId: string;
+  category: string;
+  score: number;
+  totalQuestions: number;
+  percentage: number;
+  answers: AptitudeAnswerEntry[];
 }

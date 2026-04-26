@@ -36,31 +36,36 @@ const Agent = ({
 
   useEffect(() => {
     const onCallStart = () => {
+      console.log("Vapi Event: call-start");
       setCallStatus(CallStatus.ACTIVE);
     };
-
+ 
     const onCallEnd = () => {
+      console.log("Vapi Event: call-end");
       setCallStatus(CallStatus.FINISHED);
     };
-
-    const onMessage = (message: Message) => {
+ 
+    const onMessage = (message: any) => {
+      console.log("Vapi Event: message", message.type);
       if (message.type === "transcript" && message.transcriptType === "final") {
+        console.log("New transcript message:", message.transcript);
         const newMessage = { role: message.role, content: message.transcript };
         setMessages((prev) => [...prev, newMessage]);
       }
     };
-
+ 
     const onSpeechStart = () => {
       setIsSpeaking(true);
     };
-
+ 
     const onSpeechEnd = () => {
       setIsSpeaking(false);
     };
-
+ 
     const onError = (error: Error) => {
-      console.log("Error:", error);
+      console.error("Vapi Event: error", error);
     };
+
 
     vapi.on("call-start", onCallStart);
     vapi.on("call-end", onCallEnd);
@@ -99,13 +104,16 @@ const Agent = ({
     };
 
     if (callStatus === CallStatus.FINISHED) {
+      console.log("Call status changed to FINISHED. Messages count:", messages.length);
       if (type === "generate") {
         router.push("/");
       } else {
+        console.log("Triggering handleGenerateFeedback");
         handleGenerateFeedback(messages);
       }
     }
   }, [messages, callStatus, feedbackId, interviewId, router, type, userId]);
+
 
   const handleCall = async () => {
     setCallStatus(CallStatus.CONNECTING);
